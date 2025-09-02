@@ -1,3 +1,5 @@
+"use client"
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -31,8 +33,18 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import EditTask from "@/components/edit-task";
+import { getTasks } from "@/actions/get-tasks-from-bd";
 
 const Home = () => {
+
+  const handleGetTasks = async () => {
+    
+  }
+
+
+
+
   return (
     <main className="w-full h-screen bg-gray-100 flex justify-center items-center">
       <Card className="w-lg ">
@@ -43,6 +55,8 @@ const Home = () => {
             Cadastrar
           </Button>
         </CardHeader>
+
+        <Button onClick={handleGetTasks}>Buscar tarefas</Button>
 
         <CardContent>
           <Separator className="mb-2" />
@@ -68,21 +82,10 @@ const Home = () => {
               <p className="flex-1 px-2 text-sm">Estudar React</p>
 
               <div className="flex items-center gap-2">
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <SquarePen size={16} className="cursor-pointer" />
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Editar Tarefa</DialogTitle>
-                    </DialogHeader>
 
-                    <div className="flex gap-2">
-                      <Input placeholder="Editar tarefa" />
-                      <Button className="cursor-pointer">Editar</Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                <EditTask />
+
+
                 <Trash size={16} className="cursor-pointer" />
               </div>
             </div>
