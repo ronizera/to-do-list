@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,6 @@ import {
   CircleX,
   List,
   Plus,
-  SquarePen,
   Trash,
   ListCheck,
   Sigma,
@@ -20,7 +19,6 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -28,35 +26,89 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+
 } from "@/components/ui/dialog";
 import EditTask from "@/components/edit-task";
 import { getTasks } from "@/actions/get-tasks-from-bd";
+import { useEffect, useState } from "react";
+import { Tasks } from "@/generated/prisma";
+import { NewTask } from "@/actions/add-task";
+import { deleteTask } from "@/actions/delete-tasks";
+import {toast} from "sonner"
 
 const Home = () => {
+  const [taskList, setTaskList] = useState<Tasks[]>([]);
+  const [task, setTask] = useState<string>("");
 
   const handleGetTasks = async () => {
-    
+    try {
+      const tasks = await getTasks();
+
+      if (!tasks) return;
+
+      setTaskList(tasks);
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const handleAddTasks = async () => {
+    try {
+      if (task.length === 0 || !task) {
+        return;
+      }
+
+      const myNewTask = await NewTask(task);
+
+      if (!myNewTask) return;
+
+      setTask('')
+      toast.success("Atividade adicionada com sucesso")
+      await handleGetTasks();
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const handleDeleteTask = async (id: string) => {
+    try{
+      if(!id) return
+
+      const deletedTask = await deleteTask(id)
+
+      if(!deleteTask) return
+
+      console.log(deleteTask)
+      await handleGetTasks()
+      toast.warning("Atividade deletada com sucesso")
+    }catch (error){
+      throw error
+    }
   }
 
+  const handleToggleTask = async () => {
+    console.log(taskList)
+    const previousTasks = [...taskList]
+    console.log(previousTasks)
+  }
 
-
+  useEffect(() => {
+    handleGetTasks();
+  }, []);
 
   return (
     <main className="w-full h-screen bg-gray-100 flex justify-center items-center">
       <Card className="w-lg ">
         <CardHeader className="flex gap-2">
-          <Input placeholder="Adicionar Tarefa" />
-          <Button className="cursor-pointer">
+          <Input
+            placeholder="Adicionar Tarefa"
+            onChange={(e) => setTask(e.target.value)} value={task}
+          />
+          <Button className="cursor-pointer" onClick={handleAddTasks}>
             <Plus />
             Cadastrar
           </Button>
         </CardHeader>
-
-        <Button onClick={handleGetTasks}>Buscar tarefas</Button>
 
         <CardContent>
           <Separator className="mb-2" />
@@ -77,18 +129,21 @@ const Home = () => {
           </div>
 
           <div className=" mt-4 border-b-1">
-            <div className=" h-12 flex justify-between items-center border-t-1">
-              <div className="w-1 h-full bg-green-300"></div>
-              <p className="flex-1 px-2 text-sm">Estudar React</p>
+            {taskList.map((task) => (
+              <div
+                className=" h-12 flex justify-between items-center border-t-1"
+                key={task.id}
+              >
+                <div className={`${task.done ? 'w-1 h-full bg-green-400' : 'w-1 h-full bg-red-400' }`}></div>
+                <p className="flex-1 px-2 text-sm cursor-pointer hover:text-gray-700" onClick={handleToggleTask}>{task.task}</p>
 
-              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2">
+                  <EditTask />
 
-                <EditTask />
-
-
-                <Trash size={16} className="cursor-pointer" />
+                  <Trash size={16} className="cursor-pointer"  onClick={() => handleDeleteTask(task.id)}/>
+                </div>
               </div>
-            </div>
+            ))}
           </div>
 
           <div className="flex justify-between mt-4">
