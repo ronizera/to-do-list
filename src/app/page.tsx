@@ -13,6 +13,7 @@ import {
   Trash,
   ListCheck,
   Sigma,
+  LoaderCircle,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -24,21 +25,21 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-  Dialog,
-
-} from "@/components/ui/dialog";
+import { Dialog } from "@/components/ui/dialog";
 import EditTask from "@/components/edit-task";
 import { getTasks } from "@/actions/get-tasks-from-bd";
 import { useEffect, useState } from "react";
 import { Tasks } from "@/generated/prisma";
 import { NewTask } from "@/actions/add-task";
 import { deleteTask } from "@/actions/delete-tasks";
-import {toast} from "sonner"
+import { toast } from "sonner";
+import { updateTaskStatus } from "@/actions/toggle-done";
 
 const Home = () => {
   const [taskList, setTaskList] = useState<Tasks[]>([]);
   const [task, setTask] = useState<string>("");
+  const [Loading, setLoading] = useState<boolean>(false);
+  const [currentFilter, setCurrentFilter] = useState('completed')
 
   const handleGetTasks = async () => {
     try {
@@ -53,8 +54,11 @@ const Home = () => {
   };
 
   const handleAddTasks = async () => {
+    setLoading(true);
     try {
       if (task.length === 0 || !task) {
+        toast.error("insira uma atividade");
+        setLoading(false);
         return;
       }
 
@@ -62,35 +66,57 @@ const Home = () => {
 
       if (!myNewTask) return;
 
-      setTask('')
-      toast.success("Atividade adicionada com sucesso")
+      setTask("");
+      toast.success("Atividade adicionada com sucesso");
       await handleGetTasks();
+    } catch (error) {
+      throw error;
+    }
+    setLoading(false);
+  };
+
+  const handleDeleteTask = async (id: string) => {
+    try {
+      if (!id) return;
+
+      const deletedTask = await deleteTask(id);
+
+      if (!deleteTask) return;
+
+      console.log(deleteTask);
+      await handleGetTasks();
+      toast.warning("Atividade deletada com sucesso");
     } catch (error) {
       throw error;
     }
   };
 
-  const handleDeleteTask = async (id: string) => {
-    try{
-      if(!id) return
+  const handleToggleTask = async (taskId: string) => {
+    console.log(taskList);
+    const previousTasks = [...taskList];
 
-      const deletedTask = await deleteTask(id)
+    try {
+      setTaskList((prev) => {
+        const updatedTaskList = prev.map((task) => {
+          if (task.id === taskId) {
+            return {
+              ...task,
+              done: !task.done,
+            };
+          } else {
+            return task;
+          }
+        });
 
-      if(!deleteTask) return
+        return updatedTaskList;
+      });
 
-      console.log(deleteTask)
-      await handleGetTasks()
-      toast.warning("Atividade deletada com sucesso")
-    }catch (error){
-      throw error
+      await updateTaskStatus(taskId);
+    } catch (error) {
+      setTaskList(previousTasks);
+      throw error;
     }
-  }
-
-  const handleToggleTask = async () => {
-    console.log(taskList)
-    const previousTasks = [...taskList]
-    console.log(previousTasks)
-  }
+  };
 
   useEffect(() => {
     handleGetTasks();
@@ -102,10 +128,11 @@ const Home = () => {
         <CardHeader className="flex gap-2">
           <Input
             placeholder="Adicionar Tarefa"
-            onChange={(e) => setTask(e.target.value)} value={task}
+            onChange={(e) => setTask(e.target.value)}
+            value={task}
           />
           <Button className="cursor-pointer" onClick={handleAddTasks}>
-            <Plus />
+            {Loading ? <LoaderCircle className="animate-spin" /> : <Plus />}
             Cadastrar
           </Button>
         </CardHeader>
@@ -114,33 +141,53 @@ const Home = () => {
           <Separator className="mb-2" />
 
           <div className="flex gap-2">
-            <Badge className=" cursor-pointer " variant="default">
+            <Badge className=" cursor-pointer " variant={`${currentFilter === 'all' ? "default" : "outline"}`}>
               <List />
               Todas
             </Badge>
-            <Badge className="cursor-pointer" variant="outline">
+            <Badge className="cursor-pointer" variant={`${currentFilter === 'pending' ? "default" : "outline"}`}>
               <CircleX />
               Nao finalizadas
             </Badge>
-            <Badge className="cursor-pointer" variant="outline">
+            <Badge className="cursor-pointer" variant={`${currentFilter === "completed" ? "default" : "outline"}`}
               <Check />
               Concluidas
             </Badge>
           </div>
 
           <div className=" mt-4 border-b-1">
+            {taskList.length === 0 && (
+              <p className="text-xs border-t-1 py-4">
+                Voce nao tem nenhuma atividade cadastrada
+              </p>
+            )}
             {taskList.map((task) => (
               <div
                 className=" h-12 flex justify-between items-center border-t-1"
                 key={task.id}
               >
-                <div className={`${task.done ? 'w-1 h-full bg-green-400' : 'w-1 h-full bg-red-400' }`}></div>
-                <p className="flex-1 px-2 text-sm cursor-pointer hover:text-gray-700" onClick={handleToggleTask}>{task.task}</p>
+                <div
+                  className={`${
+                    task.done
+                      ? "w-1 h-full bg-green-400"
+                      : "w-1 h-full bg-red-400"
+                  }`}
+                ></div>
+                <p
+                  className="flex-1 px-2 text-sm cursor-pointer hover:text-gray-700"
+                  onClick={() => handleToggleTask(task.id)}
+                >
+                  {task.task}
+                </p>
 
                 <div className="flex items-center gap-2">
-                  <EditTask />
+                  <EditTask task={task} handleGetTasks={handleGetTasks} />
 
-                  <Trash size={16} className="cursor-pointer"  onClick={() => handleDeleteTask(task.id)}/>
+                  <Trash
+                    size={16}
+                    className="cursor-pointer"
+                    onClick={() => handleDeleteTask(task.id)}
+                  />
                 </div>
               </div>
             ))}
