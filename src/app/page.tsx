@@ -1,14 +1,12 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import {
-  Check,
-  CircleX,
-  List,
+
   Plus,
   Trash,
   ListCheck,
@@ -25,7 +23,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Dialog } from "@/components/ui/dialog";
 import EditTask from "@/components/edit-task";
 import { getTasks } from "@/actions/get-tasks-from-bd";
 import { useEffect, useState } from "react";
@@ -34,12 +31,15 @@ import { NewTask } from "@/actions/add-task";
 import { deleteTask } from "@/actions/delete-tasks";
 import { toast } from "sonner";
 import { updateTaskStatus } from "@/actions/toggle-done";
+import Filter from "@/components/filter";
+import { FilterType } from "@/components/filter";
 
 const Home = () => {
   const [taskList, setTaskList] = useState<Tasks[]>([]);
   const [task, setTask] = useState<string>("");
   const [Loading, setLoading] = useState<boolean>(false);
-  const [currentFilter, setCurrentFilter] = useState('completed')
+  const [currentFilter, setCurrentFilter] = useState<FilterType>('all')
+  const [filteredTasks, setFilteredTasks] = useState<Tasks[]>([])
 
   const handleGetTasks = async () => {
     try {
@@ -122,6 +122,14 @@ const Home = () => {
     handleGetTasks();
   }, []);
 
+  useEffect(() => {
+    switch(currentFilter){
+      case "all":
+        setFilteredTasks(taskList)
+        break
+    }
+  }, [currentFilter])
+
   return (
     <main className="w-full h-screen bg-gray-100 flex justify-center items-center">
       <Card className="w-lg ">
@@ -140,20 +148,7 @@ const Home = () => {
         <CardContent>
           <Separator className="mb-2" />
 
-          <div className="flex gap-2">
-            <Badge className=" cursor-pointer " variant={`${currentFilter === 'all' ? "default" : "outline"}`}>
-              <List />
-              Todas
-            </Badge>
-            <Badge className="cursor-pointer" variant={`${currentFilter === 'pending' ? "default" : "outline"}`}>
-              <CircleX />
-              Nao finalizadas
-            </Badge>
-            <Badge className="cursor-pointer" variant={`${currentFilter === "completed" ? "default" : "outline"}`}
-              <Check />
-              Concluidas
-            </Badge>
-          </div>
+          <Filter currentFilter={currentFilter} setCurrentFilter={setCurrentFilter}/>
 
           <div className=" mt-4 border-b-1">
             {taskList.length === 0 && (
