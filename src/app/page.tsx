@@ -33,6 +33,7 @@ import { toast } from "sonner";
 import { updateTaskStatus } from "@/actions/toggle-done";
 import Filter from "@/components/filter";
 import { FilterType } from "@/components/filter";
+import { deleteCompletedTasks } from "@/actions/clear-completed-task";
 
 const Home = () => {
   const [taskList, setTaskList] = useState<Tasks[]>([]);
@@ -118,6 +119,13 @@ const Home = () => {
     }
   };
 
+  const clearCompletedTasks =  async () => {
+    const deletedTasks = await deleteCompletedTasks()
+    if(!deletedTasks) return
+
+    setTaskList(deletedTasks)
+  }
+
   useEffect(() => {
     handleGetTasks();
   }, []);
@@ -127,8 +135,16 @@ const Home = () => {
       case "all":
         setFilteredTasks(taskList)
         break
+      case "pending":
+        const pendingTasks = taskList.filter(task => !task.done)
+        setFilteredTasks(pendingTasks)
+        break
+      case "completed":
+        const completedTask = taskList.filter(task => task.done)
+        setFilteredTasks(completedTask)
+        break
     }
-  }, [currentFilter])
+  }, [currentFilter, taskList])
 
   return (
     <main className="w-full h-screen bg-gray-100 flex justify-center items-center">
@@ -156,7 +172,7 @@ const Home = () => {
                 Voce nao tem nenhuma atividade cadastrada
               </p>
             )}
-            {taskList.map((task) => (
+            {filteredTasks.map((task) => (
               <div
                 className=" h-12 flex justify-between items-center border-t-1"
                 key={task.id}
@@ -191,7 +207,7 @@ const Home = () => {
           <div className="flex justify-between mt-4">
             <div className="flex gap-2 items-center">
               <ListCheck size={18} />
-              <p className="text-xs">Tarefas Concluídas (3/3)</p>
+              <p className="text-xs">Tarefas Concluídas ({taskList.filter(task => task.done).length}/{taskList.length})</p>
             </div>
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -207,12 +223,12 @@ const Home = () => {
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>
-                    Tem certeza que deseja excluir x itens
+                    Tem certeza que deseja excluir?
                   </AlertDialogTitle>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogAction>Sim</AlertDialogAction>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction className="cursor-pointer" onClick={clearCompletedTasks}>Sim</AlertDialogAction>
+                  <AlertDialogCancel className="cursor-pointer">Cancelar</AlertDialogCancel>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
@@ -221,13 +237,13 @@ const Home = () => {
           <div className="h-2 w-full bg-gray-100 mt-4 rounded-md">
             <div
               className="h-full  bg-blue-500 rounded-md"
-              style={{ width: "50%" }}
+              style={{ width: `${((taskList.filter(task => task.done).length) / taskList.length) * 100 }%` }}
             ></div>
           </div>
 
           <div className="flex justify-end items-center mt-2 gap-2">
             <Sigma size={18} />
-            <p className="text-xs">3 tarefas no total</p>
+            <p className="text-xs">{taskList.length} tarefas no total</p>
           </div>
         </CardContent>
         <div></div>
